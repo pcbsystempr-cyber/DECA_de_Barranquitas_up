@@ -1,6 +1,125 @@
-// Verificar autenticación
-if (typeof isAuthenticated === 'function' && !isAuthenticated()) {
+// Acceso al panel: navegación directa desde el botón Admin
+
+const ADMIN_PANEL_USERNAME = 'Admin';
+const ADMIN_PANEL_PASSWORD = 'DECA2026';
+
+function normalizeUser(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function syncAdminSession() {
+  const userData = {
+    id: 'local-admin',
+    name: 'Administrador',
+    nombre: 'Administrador',
+    email: 'admin@deca.coop.barranquitas',
+    provider: 'manual',
+    role: 'admin'
+  };
+
+  localStorage.setItem('user_logged_in', 'true');
+  localStorage.setItem('user_data', JSON.stringify(userData));
+}
+
+function logoutAdminSession() {
+  sessionStorage.removeItem('admin_panel_unlocked');
+  localStorage.removeItem('deca_auth_token');
+  localStorage.removeItem('user_data');
+  localStorage.removeItem('user_logged_in');
   window.location.href = 'index.html';
+}
+
+function requestAdminAccess() {
+  if (sessionStorage.getItem('admin_panel_unlocked') === 'true') {
+    syncAdminSession();
+    return Promise.resolve(true);
+  }
+
+  return new Promise(resolve => {
+    let attempts = 0;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-auth-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(0, 0, 0, 0.75)';
+    overlay.style.backdropFilter = 'blur(6px)';
+    overlay.style.zIndex = '99999';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '16px';
+
+    overlay.innerHTML = `
+      <div style="width:100%;max-width:420px;background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+        <h2 style="margin:0 0 8px 0;color:#fff;font-size:24px;font-weight:700">Acceso Administrador</h2>
+        <p style="margin:0 0 16px 0;color:#94a3b8;font-size:14px">Ingresa tus credenciales para entrar al panel.</p>
+        <form id="admin-auth-form" style="display:grid;gap:12px">
+          <input id="admin-auth-user" type="text" placeholder="Usuario" autocomplete="username"
+            style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#fff;outline:none" required>
+          <input id="admin-auth-pass" type="password" placeholder="Contrasena" autocomplete="current-password"
+            style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#fff;outline:none" required>
+          <p id="admin-auth-error" style="display:none;margin:0;color:#fca5a5;font-size:13px"></p>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button type="submit" style="flex:1;padding:11px 12px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer">Entrar</button>
+            <button id="admin-auth-cancel" type="button" style="flex:1;padding:11px 12px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:transparent;color:#cbd5e1;font-weight:700;cursor:pointer">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const form = document.getElementById('admin-auth-form');
+    const userInput = document.getElementById('admin-auth-user');
+    const passInput = document.getElementById('admin-auth-pass');
+    const errorEl = document.getElementById('admin-auth-error');
+    const cancelBtn = document.getElementById('admin-auth-cancel');
+
+    const closeGate = () => {
+      document.body.style.overflow = previousOverflow;
+      overlay.remove();
+    };
+
+    cancelBtn.addEventListener('click', () => {
+      closeGate();
+      window.location.href = 'index.html';
+      resolve(false);
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const username = normalizeUser(userInput.value);
+      const password = passInput.value;
+
+      if (username === normalizeUser(ADMIN_PANEL_USERNAME) && password === ADMIN_PANEL_PASSWORD) {
+        sessionStorage.setItem('admin_panel_unlocked', 'true');
+        syncAdminSession();
+        closeGate();
+        resolve(true);
+        return;
+      }
+
+      attempts += 1;
+      const remaining = Math.max(0, 3 - attempts);
+      if (remaining === 0) {
+        closeGate();
+        window.alert('Acceso denegado.');
+        window.location.href = 'index.html';
+        resolve(false);
+        return;
+      }
+
+      errorEl.style.display = 'block';
+      errorEl.textContent = `Credenciales incorrectas. Intentos restantes: ${remaining}`;
+      passInput.value = '';
+      passInput.focus();
+    });
+
+    userInput.focus();
+  });
 }
 
 let products = [];
@@ -569,6 +688,8 @@ async function triggerPushToClients(title, body, tag = 'general') {
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!await requestAdminAccess()) return;
+
   await loadProducts();
   await loadAdminSettings();
   checkLowStock();

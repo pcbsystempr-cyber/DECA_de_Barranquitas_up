@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <script src="auth.js"></script>
+  <script src="auth.js?v=20260425"></script>
   <script>
     // ========== LOGIN MANUAL ==========
     document.getElementById('manual-login-form').addEventListener('submit', function(e) {
@@ -96,17 +96,19 @@
       // Verificar credenciales (usando el sistema existente de auth.js)
       if (username === 'Admin' && password === 'DECA2026') {
         // Crear token
-        const token = createToken(username);
-        localStorage.setItem('deca_auth_token', token);
-        localStorage.setItem('user_logged_in', 'true');
-
-        // Guardar datos del usuario
         const userData = {
+          id: 'local-admin',
           name: 'Administrador',
+          nombre: 'Administrador',
           email: 'admin@deca.coop.barranquitas',
           provider: 'manual',
           role: 'admin'
         };
+        const token = createToken(userData);
+        localStorage.setItem('deca_auth_token', token);
+        localStorage.setItem('user_logged_in', 'true');
+
+        // Guardar datos del usuario
         localStorage.setItem('user_data', JSON.stringify(userData));
 
         showSuccess('¡Inicio de sesión exitoso!');
