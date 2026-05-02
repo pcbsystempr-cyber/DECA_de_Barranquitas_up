@@ -372,8 +372,9 @@ function renderCandies() {
     const inCart = cart[candyId];
 
     // Determinar qué mostrar: imagen o emoji como fallback
-    const imageHtml = candy.image
-      ? `<img src="${candy.image}" alt="${candy.name}" class="w-24 h-24 object-contain mx-auto mb-2 group-hover:scale-110 transition-transform">`
+    const candyImage = candy.image || candy.image_url;
+    const imageHtml = candyImage
+      ? `<img src="${candyImage}" alt="${candy.name}" class="w-24 h-24 object-contain mx-auto mb-2 group-hover:scale-110 transition-transform">`
       : `<span class="text-4xl group-hover:scale-110 transition-transform">${candy.emoji || '🍬'}</span>`;
 
     const safeCandyId = JSON.stringify(candyId);
