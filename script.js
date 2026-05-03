@@ -835,6 +835,7 @@ function initCarousel() {
 
   const container = document.getElementById('carousel-container');
   const indicators = document.getElementById('carousel-indicators');
+  if (!container || !indicators) return;
 
   // Renderizar ofertas
   container.innerHTML = offers.map((offer, idx) => `
@@ -850,8 +851,10 @@ function initCarousel() {
   `).join('');
 
   // Event listeners para navegación
-  document.getElementById('carousel-prev').addEventListener('click', () => changeSlide(-1));
-  document.getElementById('carousel-next').addEventListener('click', () => changeSlide(1));
+  const prevBtn = document.getElementById('carousel-prev');
+  const nextBtn = document.getElementById('carousel-next');
+  if (prevBtn) prevBtn.addEventListener('click', () => changeSlide(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => changeSlide(1));
 
   // Event listeners para indicadores
   document.querySelectorAll('.carousel-indicator').forEach(btn => {
@@ -874,6 +877,7 @@ function changeSlide(direction) {
 
 function updateCarousel() {
   const container = document.getElementById('carousel-container');
+  if (!container) return;
   container.style.transform = `translateX(-${currentSlide * 100}%)`;
 
   // Actualizar indicadores
